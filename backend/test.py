@@ -2,8 +2,16 @@ from orquestador import handle_turn
 
 if __name__ == "__main__":
     while True:
-        user = input(">> ")
+        user = input(">> ").strip()
         if user.lower() in ("salir", "exit", "q"):
             break
+
         out = handle_turn(user)
-        print("\n" + out["text"] + "\n")
+
+        # Imprime de forma robusta aunque cambien las claves
+        print("\n--- RESPUESTA ---")
+        if isinstance(out, dict):
+            print(out.get("text") or out.get("texto_para_jugador") or out.get("respuesta") or str(out))
+        else:
+            print(str(out))
+        print("---------------\n")

@@ -1,5 +1,5 @@
 from utils.almacenamiento import load_state, save_state
-from agents.narrador import narrator_agent
+from agents.narrador import narrador_agent
 
 
 def apply_updates(state: dict, updates: dict) -> dict:
@@ -60,7 +60,8 @@ def handle_turn(player_input: str) -> dict:
     state["logs"]["actions"].append(player_input)
 
     # 2) Llamar al agente adecuado (por ahora siempre narrador)
-    result = narrator_agent(state, player_input)
+    result = narrador_agent(state, player_input)
+    #print("DEBUG result =", result)
 
     # 3) Aplicar updates y guardar
     state = apply_updates(state, result.get("updates", {}))
