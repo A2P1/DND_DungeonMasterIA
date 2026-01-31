@@ -32,11 +32,26 @@ def apply_updates(state: dict, updates: dict) -> dict:
     if "flags" in updates and isinstance(updates["flags"], dict):
         state.setdefault("flags", {}).update(updates["flags"])
 
-    # 4) World (cuidado: aquí podrías ser más granular)
+    # visited_locations_append (si viene un lugar nuevo)
     if "world" in updates and isinstance(updates["world"], dict):
-        state.setdefault("world", {}).update(updates["world"])
+        w_updates = updates["world"]
 
-    return state
+        # append de visited_locations
+        if "visited_locations_append" in w_updates and isinstance(w_updates["visited_locations_append"], str):
+            state.setdefault("world", {}).setdefault("visited_locations", [])
+            loc = w_updates["visited_locations_append"]
+            if loc not in state["world"]["visited_locations"]:
+                state["world"]["visited_locations"].append(loc)
+
+        # current_scene parcial
+        if "current_scene" in w_updates and isinstance(w_updates["current_scene"], dict):
+            state.setdefault("world", {}).setdefault("current_scene", {}).update(w_updates["current_scene"])
+
+        # (si quieres) merge general de world (sin machacar listas/dicts complejos)
+        # state.setdefault("world", {}).update({k: v for k, v in w_updates.items() if k not in ("visited_locations_append", "current_scene")})
+
+
+        return state
 
 
 def handle_turn(player_input: str) -> dict:

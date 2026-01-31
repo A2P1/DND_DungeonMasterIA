@@ -1,7 +1,7 @@
 {
   "meta": {
     "version": 1,
-    "created_at": "2025-12-26T11:32:32.756165",
+    "created_at": "2026-01-30T15:07:59.172983",
     "turn": 9
   },
   "player": {
@@ -17,18 +17,20 @@
     },
     "inventory": [],
     "gold": 0,
-    "location": "inicio",
+    "location": "almacén detrás de la tienda",
     "status_effects": []
   },
   "world": {
     "current_scene": {
-      "type": "exploration",
+      "type": "dialogue",
       "location": "inicio",
       "active_enemy_ids": [],
       "active_npc_ids": []
     },
     "visited_locations": [
-      "inicio"
+      "inicio",
+      "tienda",
+      "almacén"
     ],
     "locations": {
       "inicio": {
@@ -47,28 +49,31 @@
   },
   "flags": {},
   "narrative_memory": {
-    "summary": "La aventura acaba de comenzar.",
+    "summary": "El jugador explora la parte trasera de la tienda y se encuentra con un hombre misterioso.",
     "last_events": [
-      "Turno 1: el jugador dijo 'miro a mi alrededor'",
-      "Turno 2: el jugador dijo 'veo un arbol'",
-      "Turno 3: el jugador dijo 'y ahora me voy'",
-      "Turno 7: jugador -> miro a mi alrededor y veo un templo ",
-      "Turno 8: jugador -> miro a mi alrededor y veo un templo ",
-      "Turno 9: jugador -> Cojo aire y lo expulso y, sabiendo que soy un guerrero, me atrevo y entro en el templo "
+      "Turno 1: jugador -> me recibió a mi y a mi grupo el alcalde del pueblo, en este hay una taberna, una tienda y una iglesia, a parte de las demás casas ",
+      "Turno 2: jugador -> voy a la tienda en busca de suministros ",
+      "Turno 3: jugador -> mi grupo decide ir a la iglesia mientras yo  me quedo en la tienda y le pido recomendaciones al vendedor ",
+      "Turno 4: jugador -> me siento ofendido por la actitud del vendedor, saco el arma y ataco ",
+      "Turno 5: jugador -> continuo con el ataque, quiero c:\\Users\\pablo\\Documents\\GitHub\\DND_DungeonMasterIA\\backend\\state\\game_state.json ",
+      "Turno 6: jugador -> entro en combate con el hombre del hacha ",
+      "Turno 7: jugador -> me enfado y destruyo el planeta ",
+      "Jugador observa su entorno en la tienda y se prepara para investigar un ruido en la parte trasera.",
+      "El jugador abre la cortina y descubre a un hombre encorvado que parece hostil."
     ],
     "important_facts": []
   },
   "logs": {
     "actions": [
+      "me recibió a mi y a mi grupo el alcalde del pueblo, en este hay una taberna, una tienda y una iglesia, a parte de las demás casas",
+      "voy a la tienda en busca de suministros",
+      "mi grupo decide ir a la iglesia mientras yo  me quedo en la tienda y le pido recomendaciones al vendedor",
+      "me siento ofendido por la actitud del vendedor, saco el arma y ataco",
+      "continuo con el ataque, quiero c:\\Users\\pablo\\Documents\\GitHub\\DND_DungeonMasterIA\\backend\\state\\game_state.json",
+      "entro en combate con el hombre del hacha",
+      "me enfado y destruyo el planeta",
       "miro a mi alrededor",
-      "veo un arbol",
-      "y ahora me voy",
-      "miro a mi alrededor",
-      "miro a mi alrededor",
-      "miro a mi alrededor",
-      "miro a mi alrededor y veo un templo",
-      "miro a mi alrededor y veo un templo",
-      "Cojo aire y lo expulso y, sabiendo que soy un guerrero, me atrevo y entro en el templo"
+      "Con mucho miedo abro la cortina"
     ]
   }
 }
