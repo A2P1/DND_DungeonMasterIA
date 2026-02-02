@@ -51,13 +51,6 @@
   "narrative_memory": {
     "summary": "El jugador explora la parte trasera de la tienda y se encuentra con un hombre misterioso.",
     "last_events": [
-      "Turno 1: jugador -> me recibió a mi y a mi grupo el alcalde del pueblo, en este hay una taberna, una tienda y una iglesia, a parte de las demás casas ",
-      "Turno 2: jugador -> voy a la tienda en busca de suministros ",
-      "Turno 3: jugador -> mi grupo decide ir a la iglesia mientras yo  me quedo en la tienda y le pido recomendaciones al vendedor ",
-      "Turno 4: jugador -> me siento ofendido por la actitud del vendedor, saco el arma y ataco ",
-      "Turno 5: jugador -> continuo con el ataque, quiero c:\\Users\\pablo\\Documents\\GitHub\\DND_DungeonMasterIA\\backend\\state\\game_state.json ",
-      "Turno 6: jugador -> entro en combate con el hombre del hacha ",
-      "Turno 7: jugador -> me enfado y destruyo el planeta ",
       "Jugador observa su entorno en la tienda y se prepara para investigar un ruido en la parte trasera.",
       "El jugador abre la cortina y descubre a un hombre encorvado que parece hostil."
     ],
