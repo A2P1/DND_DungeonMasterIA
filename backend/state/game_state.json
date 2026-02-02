@@ -39,7 +39,15 @@
         "connected_to": []
       }
     },
-    "enemies": {},
+    "enemies": {
+      "name": "Bandido",
+      "hp": 15,
+      "max_hp": 15,
+      "ac": 12,
+      "attack_bonus": 3,
+      "damage": "1d6+",
+      "is_alive": true
+    },
     "npcs": {},
     "items": {},
     "quests": {
