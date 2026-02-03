@@ -12,6 +12,7 @@ def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Reducimos el estado para no mandar un JSON enorme al modelo.
     Se adapta a la estructura real: world.current_scene, world.locations, etc.
+    Se adapta a la estructura real: world.current_scene, world.locations, etc.
     """
     meta = state.get("meta", {})
     player = state.get("player", {})
@@ -25,13 +26,23 @@ def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
     current_location_id = current_scene.get("location") or player.get("location", "inicio")
     current_location_info = locations.get(current_location_id, {})
 
+    current_scene = world.get("current_scene", {}) or {}
+    locations = world.get("locations", {}) or {}
+
+    # Para no mandar un mapa enorme, enviamos solo info del lugar actual (si existe)
+    current_location_id = current_scene.get("location") or player.get("location", "inicio")
+    current_location_info = locations.get(current_location_id, {})
+
     return {
         "turn": meta.get("turn", 0),
 
+
         "player": {
+            "id": player.get("id", "player_1"),
             "id": player.get("id", "player_1"),
             "name": player.get("name", "Jugador"),
             "hp": player.get("hp", 0),
+            "max_hp": player.get("max_hp", player.get("hp", 0)),
             "max_hp": player.get("max_hp", player.get("hp", 0)),
             "location": player.get("location", "inicio"),
             "inventory": player.get("inventory", []),
@@ -64,14 +75,10 @@ def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
             "quests_completed": (world.get("quests", {}) or {}).get("completed", []),
         },
 
-        "flags": state.get("flags", {}),
+            "gold": player.get("gold", 0),
+            "status_effects": player.get("status_effects", []),
+        },
 
-        "narrative_memory": {
-            "summary": mem.get("summary", ""),
-            "last_events": (mem.get("last_events", [])[-5:]),
-            "important_facts": mem.get("important_facts", []),
-        }
-    }
 
 
 class NarratorAgent(BaseReActAgent):
@@ -85,6 +92,7 @@ class NarratorAgent(BaseReActAgent):
     def user_prompt(self, inp: AgentInput) -> str:
         context = _compact_context(inp.state)
 
+
         return (
             "ESTADO ACTUAL (resumen):\n"
             f"{json.dumps(context, ensure_ascii=False, indent=2)}\n\n"
@@ -95,6 +103,9 @@ class NarratorAgent(BaseReActAgent):
             "- Si el jugador se mueve, usa world.location (id del lugar) y world.add_visited_location.\n"
             "- Si introduces un encuentro hostil y quieres pasar a combate, pon scene.type='combat' y añade enemy_id(s) a active_enemy_ids.\n"
             "- Añade un evento a memory.append_event que resuma el turno.\n"
+            "- Si el jugador se mueve, usa world.location (id del lugar) y world.add_visited_location.\n"
+            "- Si introduces un encuentro hostil y quieres pasar a combate, pon scene.type='combat' y añade enemy_id(s) a active_enemy_ids.\n"
+            "- Añade un evento a memory.append_event que resuma el turno.\n"
         )
 
 
@@ -102,13 +113,16 @@ def narrador_agent(game_state: dict, player_input: str) -> dict:
     """
     Adaptador para mantener compatibilidad con el orquestador actual:
     devuelve dict con keys: text, updates
+    devuelve dict con keys: text, updates
     """
     agent = NarratorAgent()
     out: AgentOutput = agent.invoke(AgentInput(player_input=player_input, state=game_state))
 
     turn = game_state.get("meta", {}).get("turn", 0)
     updates: Dict[str, Any] = {}
+    updates: Dict[str, Any] = {}
 
+    # ---- Memoria ----
     # ---- Memoria ----
     if out.memory and out.memory.append_event:
         updates.setdefault("narrative_memory", {})["last_events_append"] = out.memory.append_event
@@ -119,17 +133,23 @@ def narrador_agent(game_state: dict, player_input: str) -> dict:
         updates.setdefault("narrative_memory", {})["summary"] = out.memory.summary
 
     # ---- Movimiento / mundo ----
+    # ---- Movimiento / mundo ----
     if out.world and out.world.location:
         # location afecta tanto a player.location como a current_scene.location (mantener coherencia)
+        # location afecta tanto a player.location como a current_scene.location (mantener coherencia)
         updates.setdefault("player", {})["location"] = out.world.location
+        updates.setdefault("world", {}).setdefault("current_scene", {})["location"] = out.world.location
+
         updates.setdefault("world", {}).setdefault("current_scene", {})["location"] = out.world.location
 
     if out.world and out.world.add_visited_location:
         updates.setdefault("world", {})["visited_locations_append"] = out.world.add_visited_location
 
     # ---- Escena ----
+    # ---- Escena ----
     if out.scene and out.scene.type:
         updates.setdefault("world", {}).setdefault("current_scene", {})["type"] = out.scene.type
+
 
     if out.scene and out.scene.active_enemy_ids is not None:
         updates.setdefault("world", {}).setdefault("current_scene", {})["active_enemy_ids"] = out.scene.active_enemy_ids
@@ -139,3 +159,4 @@ def narrador_agent(game_state: dict, player_input: str) -> dict:
         updates.setdefault("debug", {})["narrator"] = out.debug
 
     return {"text": (out.text or "").strip(), "updates": updates}
+
