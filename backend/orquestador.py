@@ -63,16 +63,70 @@ def apply_updates(state: dict, updates: dict) -> dict:
     return state
 
 
+def _spawn_bandit(state: dict) -> str:
+    """
+    Crea un bandido NUEVO con ID único y stats base.
+    """
+    world = state.setdefault("world", {})
+    enemies = world.setdefault("enemies", {})
+
+    # crear id único: bandido_1, bandido_2, ...
+    i = 1
+    while f"bandido_{i}" in enemies:
+        i += 1
+    enemy_id = f"bandido_{i}"
+
+    enemies[enemy_id] = {
+        "name": f"Bandido {i}",
+        "hp": 12,
+        "max_hp": 12,
+        "ac": 10,
+        "attack_bonus": 2,
+        "damage_normal": 3,
+        "damage_strong": 6,
+        "is_alive": True,
+        "escaped": False,
+    }
+    return enemy_id
+
+
+def _ensure_active_enemy_alive(state: dict) -> str:
+    """
+    Garantiza que el enemigo activo (active_enemy_ids[0]) exista y esté vivo.
+    Si no existe o está muerto, spawnea uno nuevo y lo setea como activo.
+    """
+    world = state.setdefault("world", {})
+    scene = world.setdefault("current_scene", {})
+    enemies = world.setdefault("enemies", {})
+
+    active_ids = scene.get("active_enemy_ids") or []
+    enemy_id = active_ids[0] if active_ids else None
+
+    # si no hay enemigo o no existe -> spawnea uno nuevo
+    if not enemy_id or enemy_id not in enemies:
+        new_id = _spawn_bandit(state)
+        scene["active_enemy_ids"] = [new_id]
+        return new_id
+
+    enemy = enemies[enemy_id]
+    if enemy.get("hp", 0) <= 0 or enemy.get("is_alive") is False or enemy.get("escaped") is True:
+        new_id = _spawn_bandit(state)
+        scene["active_enemy_ids"] = [new_id]
+        return new_id
+
+    return enemy_id
+
+
 def handle_turn(player_input: str) -> dict:
     """
     Un turno completo del juego:
     - cargar estado
     - incrementar turno
     - registrar acción
-    - llamar a agente (por ahora narrador)
+    - llamar a agente (narrador o combate)
     - aplicar updates
     - guardar estado
-    - devolver texto al frontend
+    - devolver texto
     """
     state = load_state()
 
@@ -84,34 +138,33 @@ def handle_turn(player_input: str) -> dict:
     state["logs"]["actions"].append(player_input)
 
     # 2) Routing: si estamos en combate -> agente de combate, si no -> narrador.
-    # MVP: si el usuario indica intención de pelear y no hay combate activo, creamos
-    # un encuentro con 1 bandido para poder probar el sistema.
     scene = state.get("world", {}).get("current_scene", {}) or {}
     scene_type = scene.get("type", "exploration")
 
     text_low = (player_input or "").lower()
-    wants_combat = any(k in text_low for k in ["combate", "ataco", "ataque", "pego", "golpeo", "bandido"])
 
-    if scene_type != "combat" and wants_combat:
-        # Spawn de bandido_1 si no existe
-        enemies = state.setdefault("world", {}).setdefault("enemies", {})
-        if "bandido_1" not in enemies:
-            enemies["bandido_1"] = {
-                "name": "Bandido",
-                "hp": 12,
-                "max_hp": 12,
-                "ac": 10,
-                "attack_bonus": 2,
-                "damage_normal": 3,
-                "damage_strong": 6,
-                "is_alive": True,
-                "escaped": False,
-            }
+    # Palabras clave para detectar intención de combate / acciones
+    wants_combat = any(k in text_low for k in ["combate", "bandido", "enemigo"])
+    action_kw_present = any(k in text_low for k in [
+        "ataco", "atacar", "ataque", "pego", "golpeo",
+        "empuj", "esquiv", "defiend",
+        "huir", "huyo", "escap", "fuerte"
+    ])
 
+    # Si el usuario solo "entra en combate" (sin acción concreta), iniciamos el encuentro
+    # pero NO resolvemos un turno todavía: mostramos menú y esperamos acción.
+    start_only = (scene_type != "combat") and wants_combat and (not action_kw_present)
+
+    # Si el usuario ya escribe una acción (p.ej. "ataco") y no hay combate activo, iniciamos y resolvemos en el mismo input.
+    # Solo empezamos combate automáticamente si hay intención clara de combate (no solo verbos)
+    start_and_act = (scene_type != "combat") and wants_combat
+
+    if start_only or start_and_act:
+        # Inicializamos escena de combate
         state.setdefault("world", {}).setdefault("current_scene", {}).update({
             "type": "combat",
             "location": scene.get("location", state.get("player", {}).get("location", "inicio")),
-            "active_enemy_ids": ["bandido_1"],
+            "active_enemy_ids": scene.get("active_enemy_ids", []),
             "active_npc_ids": scene.get("active_npc_ids", []),
             "combat_status": {
                 "player_skip_next": False,
@@ -121,18 +174,41 @@ def handle_turn(player_input: str) -> dict:
         })
         scene_type = "combat"
 
+        # ✅ Garantizar enemigo vivo
+        enemy_id = _ensure_active_enemy_alive(state)
+        enemies = state.setdefault("world", {}).setdefault("enemies", {})
+        enemy_hp = enemies.get(enemy_id, {}).get("hp", 0)
+        enemy_name = enemies.get(enemy_id, {}).get("name", "Bandido")
+
+        if start_only:
+            # Guardamos el estado y devolvemos menú interactivo
+            save_state(state)
+            return {
+                "text": (
+                    f"¡{enemy_name} te corta el paso! (HP {enemy_hp})\n\n"
+                    "¿Qué decides hacer? (atacar / ataque fuerte / empuje / esquivo / defiendo / huir)"
+                ),
+                "image": None
+            }
+
+    # 3) Ejecutar agente
     if scene_type == "combat":
         result = combat_agent(state, player_input)
     else:
         result = narrador_agent(state, player_input)
-    #print("DEBUG result =", result)
 
-    # 3) Aplicar updates y guardar
+    # 4) Aplicar updates y guardar
     state = apply_updates(state, result.get("updates", {}))
+
+    # ✅ Si el narrador activó combate, garantizar enemigo vivo también
+    scene2 = state.get("world", {}).get("current_scene", {}) or {}
+    if scene2.get("type") == "combat":
+        _ensure_active_enemy_alive(state)
+
     save_state(state)
 
-    # 4) Respuesta estándar
+    # 5) Respuesta estándar
     return {
         "text": result.get("text", ""),
-        "image": None  # lo usaremos cuando metas el agente visual
+        "image": None
     }

@@ -1,15 +1,15 @@
 {
   "meta": {
     "version": 1,
-    "created_at": "2026-02-03T11:17:35.303892",
-    "turn": 1
+    "created_at": "2026-02-03T12:07:49.670503",
+    "turn": 6
   },
   "player": {
     "id": "player_1",
     "name": "Jugador",
     "class": "Aventurero",
     "level": 1,
-    "hp": 17,
+    "hp": 20,
     "max_hp": 20,
     "ac": 12,
     "dc": 12,
@@ -27,11 +27,9 @@
   },
   "world": {
     "current_scene": {
-      "type": "combat",
+      "type": "exploration",
       "location": "inicio",
-      "active_enemy_ids": [
-        "bandido_1"
-      ],
+      "active_enemy_ids": [],
       "active_npc_ids": [],
       "combat_status": {
         "player_skip_next": false,
@@ -51,14 +49,14 @@
     },
     "enemies": {
       "bandido_1": {
-        "name": "Bandido",
-        "hp": 7,
+        "name": "Bandido 1",
+        "hp": 0,
         "max_hp": 12,
         "ac": 10,
         "attack_bonus": 2,
         "damage_normal": 3,
         "damage_strong": 6,
-        "is_alive": true,
+        "is_alive": false,
         "escaped": false,
         "id": "bandido_1"
       }
@@ -74,13 +72,22 @@
   "narrative_memory": {
     "summary": "La aventura acaba de comenzar.",
     "last_events": [
-      "Turno 1: combate -> Bandido (HP jugador 17)"
+      "Turno 1: jugador -> Miro a mi alrededor",
+      "Turno 2: jugador -> Camino hacia la colina",
+      "Turno 4: combate(attack_strong) vs Bandido 1 | HP jugador 20 | HP enemigo 3",
+      "Turno 5: combate(attack_normal) vs Bandido 1 | HP jugador 20 | HP enemigo 0",
+      "Turno 6: jugador -> miro alrededor"
     ],
     "important_facts": []
   },
   "logs": {
     "actions": [
-      "Entro en combate"
+      "Miro a mi alrededor",
+      "Camino hacia la colina",
+      "Entro en combate",
+      "Ataque fuerte",
+      "atacar",
+      "miro alrededor"
     ]
   }
 }
