@@ -15,6 +15,14 @@ def initial_game_state():
             "level": 1,
             "hp": 20,
             "max_hp": 20,
+            # --- Combate (MVP Hito 1) ---
+            # Mantenemos "stats" por compatibilidad con versiones anteriores,
+            # pero el sistema de combate nuevo usa estos campos:
+            "ac": 12,
+            "dc": 12,
+            "attack_bonus": 2,
+            "damage_normal": 5,
+            "damage_strong": 9,
             "stats": {
                 "attack": 5,
                 "defense": 2

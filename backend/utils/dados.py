@@ -1,17 +1,20 @@
 import random
 
-def roll(dice: str) -> int:
-    """
-    Soporta formato tipo '1d20', '2d6', '1d8'.
 
-    """
-    n_str, d_str = dice.lower().split('d')
+def roll(dice: str) -> int:
+    """Tira dados en formato 'NdM' (ej: '1d20', '2d6')."""
+    n_str, d_str = dice.lower().split("d")
     n = int(n_str)
     d = int(d_str)
-    total = sum(random.randint(1, d) for _ in range(n))
-    return total
+    return sum(random.randint(1, d) for _ in range(n))
+
 
 def d20() -> int:
-    """Tira un dado de 20 caras."""
-    return roll('1d20')
+    return roll("1d20")
+
+
+def disadvantage() -> int:
+    """Tira 2d20 y se queda con el peor."""
+    return min(d20(), d20())
+
 

@@ -1,7 +1,7 @@
 {
   "meta": {
     "version": 1,
-    "created_at": "2026-02-03T09:33:38.175816",
+    "created_at": "2026-02-03T11:17:35.303892",
     "turn": 1
   },
   "player": {
@@ -9,11 +9,17 @@
     "name": "Jugador",
     "class": "Aventurero",
     "level": 1,
-    "hp": 20,
+    "hp": 17,
     "max_hp": 20,
-    "ac": 15,
-    "attack_bonus": 4,
-    "damage": "1d8",
+    "ac": 12,
+    "dc": 12,
+    "attack_bonus": 2,
+    "damage_normal": 5,
+    "damage_strong": 9,
+    "stats": {
+      "attack": 5,
+      "defense": 2
+    },
     "inventory": [],
     "gold": 0,
     "location": "inicio",
@@ -21,10 +27,17 @@
   },
   "world": {
     "current_scene": {
-      "type": "exploration",
+      "type": "combat",
       "location": "inicio",
-      "active_enemy_ids": [],
-      "active_npc_ids": []
+      "active_enemy_ids": [
+        "bandido_1"
+      ],
+      "active_npc_ids": [],
+      "combat_status": {
+        "player_skip_next": false,
+        "enemy_skip_next": false,
+        "enemy_disadvantage": false
+      }
     },
     "visited_locations": [
       "inicio"
@@ -39,12 +52,15 @@
     "enemies": {
       "bandido_1": {
         "name": "Bandido",
-        "hp": 12,
-        "max_hp":12,
-        "ac": 12,
-        "attack_bonus": 3,
-        "damage": "1d6",
-        "is_alive": true
+        "hp": 7,
+        "max_hp": 12,
+        "ac": 10,
+        "attack_bonus": 2,
+        "damage_normal": 3,
+        "damage_strong": 6,
+        "is_alive": true,
+        "escaped": false,
+        "id": "bandido_1"
       }
     },
     "npcs": {},
@@ -58,13 +74,13 @@
   "narrative_memory": {
     "summary": "La aventura acaba de comenzar.",
     "last_events": [
-      "El jugador observa el entorno en el Punto de partida y siente una mezcla de paz y inquietud."
+      "Turno 1: combate -> Bandido (HP jugador 17)"
     ],
     "important_facts": []
   },
   "logs": {
     "actions": [
-      "miro a mi alrededor y alucino"
+      "Entro en combate"
     ]
   }
 }
