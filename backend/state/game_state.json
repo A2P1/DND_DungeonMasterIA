@@ -1,8 +1,8 @@
 {
   "meta": {
     "version": 1,
-    "created_at": "2026-02-03T12:07:49.670503",
-    "turn": 6
+    "created_at": "2026-02-04T10:04:06.723261",
+    "turn": 2
   },
   "player": {
     "id": "player_1",
@@ -22,45 +22,38 @@
     },
     "inventory": [],
     "gold": 0,
-    "location": "inicio",
+    "location": "bosque",
     "status_effects": []
   },
   "world": {
     "current_scene": {
       "type": "exploration",
-      "location": "inicio",
+      "location": "bosque",
       "active_enemy_ids": [],
-      "active_npc_ids": [],
-      "combat_status": {
-        "player_skip_next": false,
-        "enemy_skip_next": false,
-        "enemy_disadvantage": false
-      }
+      "active_npc_ids": []
     },
     "visited_locations": [
-      "inicio"
+      "inicio",
+      "bosque"
     ],
+    "pending_locations": [],
     "locations": {
       "inicio": {
         "name": "Punto de partida",
         "description": "Un lugar tranquilo donde empieza la aventura.",
-        "connected_to": []
+        "connected_to": [
+          "colina"
+        ]
+      },
+      "colina": {
+        "name": "Colinas",
+        "description": "Unas colinas que se elevan en la distancia, ideales para explorar.",
+        "connected_to": [
+          "inicio"
+        ]
       }
     },
-    "enemies": {
-      "bandido_1": {
-        "name": "Bandido 1",
-        "hp": 0,
-        "max_hp": 12,
-        "ac": 10,
-        "attack_bonus": 2,
-        "damage_normal": 3,
-        "damage_strong": 6,
-        "is_alive": false,
-        "escaped": false,
-        "id": "bandido_1"
-      }
-    },
+    "enemies": {},
     "npcs": {},
     "items": {},
     "quests": {
@@ -72,22 +65,15 @@
   "narrative_memory": {
     "summary": "La aventura acaba de comenzar.",
     "last_events": [
-      "Turno 1: jugador -> Miro a mi alrededor",
-      "Turno 2: jugador -> Camino hacia la colina",
-      "Turno 4: combate(attack_strong) vs Bandido 1 | HP jugador 20 | HP enemigo 3",
-      "Turno 5: combate(attack_normal) vs Bandido 1 | HP jugador 20 | HP enemigo 0",
-      "Turno 6: jugador -> miro alrededor"
+      "El jugador observa el entorno tranquilo del Punto de partida.",
+      "El jugador entra en el Bosque cercano, notando su atmósfera cambiante y la presencia de algo oculto entre los arbustos."
     ],
     "important_facts": []
   },
   "logs": {
     "actions": [
-      "Miro a mi alrededor",
-      "Camino hacia la colina",
-      "Entro en combate",
-      "Ataque fuerte",
-      "atacar",
-      "miro alrededor"
+      "miro a mi alrededor",
+      "Entro en el bosque"
     ]
   }
 }

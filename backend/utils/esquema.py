@@ -43,6 +43,10 @@ def initial_game_state():
 
             "visited_locations": ["inicio"],
 
+            # Lugares propuestos por el narrador en el turno anterior para que el jugador los elija.
+            # Formato de cada item: {"id","name","description","connected_from"}
+            "pending_locations": [],
+
             "locations": {
                 "inicio": {
                     "name": "Punto de partida",
