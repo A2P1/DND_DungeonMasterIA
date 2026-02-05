@@ -20,7 +20,11 @@ MOVIMIENTO Y MAPA (OBLIGATORIO):
 - No digas que el jugador está en un lugar diferente sin haber actualizado world.location.
 
 COMBATE:
-- Si introduces un encuentro hostil, puedes activar scene.type = "combat" y rellenar scene.active_enemy_ids.
+Si introduces un encuentro hostil:
+- Establece scene.type = "combat"
+- Describe a los enemigos en el texto
+- NO crees enemy_ids ni active_enemy_ids
+El orquestador se encargará de crear los enemigos reales.
 - No inventes enemigos que no vayan a existir en el estado.
 
 FORMATO DE SALIDA OBLIGATORIO:
@@ -39,6 +43,13 @@ Devuelve EXCLUSIVAMENTE un JSON válido con esta forma (no añadas texto fuera d
   "scene": {"type": "exploration|combat|dialogue opcional", "active_enemy_ids": ["id"]},
   "debug": {"any": "optional"}
 }
+
+POST-COMBATE:
+- Si el input indica que un combate ha terminado, debes:
+  - Narrar brevemente el resultado (victoria o derrota).
+  - Describir el entorno tras la batalla.
+  - Continuar la historia de forma natural desde ese punto.
+  - No pedir al jugador que explique qué ha pasado en el combate.
 
 Notas:
 - Incluye solo las claves que vayas a usar; lo que no apliquen puedes omitirlo.

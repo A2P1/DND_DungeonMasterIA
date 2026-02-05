@@ -399,39 +399,60 @@ def render_combat_turn(summary: dict) -> str:
 
 
 def combat_agent(game_state: dict, player_input: str) -> dict:
-    """Agente de combate interactivo (Hito 1).
-    - Resuelve toda la lógica numérica en Python (combat_step)
-    - Muestra tiradas y resultados en pantalla (render_combat_turn)
-    - Devuelve updates para que el orquestador persista estado
     """
+    Agente de combate interactivo.
+    Devuelve:
+      - text: texto para el jugador (interactivo)
+      - updates: cambios a aplicar por el orquestador
+      - combat_end (opcional): metadatos para transición narrativa automática
+    """
+    world = game_state.setdefault("world", {})
+    scene = world.setdefault("current_scene", {})
+    enemies = world.setdefault("enemies", {})
+    player = game_state.setdefault("player", {})
+
+    location = scene.get("location", player.get("location", "inicio"))
+
+    # 1) Ejecutar paso de combate
     summary = combat_step(game_state, player_input)
-    text = render_combat_turn(summary)
 
-    turn = game_state.get("meta", {}).get("turn", 0)
+    # 2) Texto interactivo
+    combat_text = render_combat_turn(summary)
 
-    # Updates mínimos: HP jugador, current_scene completo (para no machacar campos) y memoria
-    scene = game_state.get("world", {}).get("current_scene", {}) or {}
+    # 3) Construir updates a partir del summary
+    updates: dict = {}
 
-    # Evento de memoria compacto
-    enemy_name = summary.get("enemy_name", "enemigo")
-    player_action = (summary.get("player") or {}).get("action", "accion")
-    hp_after = summary.get("hp_after", {}) or {}
-    mem_line = f"Turno {turn}: combate({player_action}) vs {enemy_name} | HP jugador {hp_after.get('player_hp')} | HP enemigo {hp_after.get('enemy_hp')}"
+    # --- Player HP ---
+    if "hp_after" in summary and "player_hp" in summary["hp_after"]:
+        updates.setdefault("player", {})["hp"] = summary["hp_after"]["player_hp"]
 
-    updates = {
-        "player": {"hp": game_state.get("player", {}).get("hp", 0)},
-        "world": {
-            "current_scene": {
-                "type": scene.get("type", "exploration"),
-                "location": scene.get("location", "inicio"),
-                "active_enemy_ids": scene.get("active_enemy_ids", []),
-                "active_npc_ids": scene.get("active_npc_ids", []),
-                "combat_status": scene.get("combat_status", {})
-            }
-        },
-        "narrative_memory": {
-            "last_events_append": mem_line
-        }
+    # --- Enemy HP / estado ---
+    enemy_id = summary.get("enemy_id")
+    if enemy_id and enemy_id in enemies:
+        updates.setdefault("world", {}).setdefault("enemies", {}).setdefault(enemy_id, {})
+        updates["world"]["enemies"][enemy_id]["hp"] = summary["hp_after"]["enemy_hp"]
+        updates["world"]["enemies"][enemy_id]["is_alive"] = not summary.get("enemy_dead", False)
+
+    # --- Fin de combate ---
+    if summary.get("combat_ended"):
+        updates.setdefault("world", {}).setdefault("current_scene", {})
+        updates["world"]["current_scene"]["type"] = "exploration"
+        updates["world"]["current_scene"]["active_enemy_ids"] = []
+
+    # 4) Construir salida
+    out = {
+        "text": combat_text,
+        "updates": updates,
     }
 
-    return {"text": text, "updates": updates, "summary": summary}
+    # 5) Metadatos post-combate (para el orquestador)
+    if summary.get("combat_ended"):
+        result_str = "defeat" if summary.get("player_dead") else "victory"
+
+        out["combat_end"] = {
+            "result": result_str,
+            "enemy_ids": [enemy_id] if summary.get("enemy_dead") else [],
+            "location": location,
+        }
+
+    return out

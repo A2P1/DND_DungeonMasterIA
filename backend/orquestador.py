@@ -39,7 +39,9 @@ def apply_updates(state: dict, updates: dict) -> dict:
         w_updates = updates["world"]
 
         # Merge seguro de current_scene (para no perder campos)
-        if "current_scene" in w_updates and isinstance(w_updates["current_scene"], dict):
+        if "current_scene" in w_updates and isinstance(
+            w_updates["current_scene"], dict
+        ):
             w_scene = w.setdefault("current_scene", {})
             w_scene.update(w_updates["current_scene"])
             w["current_scene"] = w_scene
@@ -53,12 +55,17 @@ def apply_updates(state: dict, updates: dict) -> dict:
                     w["visited_locations"].append(loc)
 
         # --- Pending locations (lugares propuestos por el narrador) ---
-        if "propose_location" in w_updates and isinstance(w_updates["propose_location"], dict):
+        if "propose_location" in w_updates and isinstance(
+            w_updates["propose_location"], dict
+        ):
             pl = w_updates["propose_location"]
             w.setdefault("pending_locations", [])
             pl_id = pl.get("id")
             if isinstance(pl_id, str) and pl_id:
-                exists = any(isinstance(x, dict) and x.get("id") == pl_id for x in w["pending_locations"])
+                exists = any(
+                    isinstance(x, dict) and x.get("id") == pl_id
+                    for x in w["pending_locations"]
+                )
                 if not exists:
                     w["pending_locations"].append(pl)
 
@@ -78,7 +85,11 @@ def apply_updates(state: dict, updates: dict) -> dict:
                         "connected_to": loc.get("connected_to", []),
                     }
 
-        if "connect_locations" in w_updates and isinstance(w_updates["connect_locations"], list) and len(w_updates["connect_locations"]) == 2:
+        if (
+            "connect_locations" in w_updates
+            and isinstance(w_updates["connect_locations"], list)
+            and len(w_updates["connect_locations"]) == 2
+        ):
             a, b = w_updates["connect_locations"][0], w_updates["connect_locations"][1]
             w.setdefault("locations", {})
             if a in w["locations"] and b in w["locations"]:
@@ -91,7 +102,14 @@ def apply_updates(state: dict, updates: dict) -> dict:
 
         # Resto de claves a nivel world
         for k, v in w_updates.items():
-            if k in ("current_scene", "visited_locations_append", "propose_location", "clear_pending_locations", "add_location", "connect_locations"):
+            if k in (
+                "current_scene",
+                "visited_locations_append",
+                "propose_location",
+                "clear_pending_locations",
+                "add_location",
+                "connect_locations",
+            ):
                 continue
             w[k] = v
 
@@ -106,10 +124,11 @@ def handle_turn(player_input: str) -> dict:
     - cargar estado
     - incrementar turno
     - registrar acción
-    - llamar a agente (por ahora narrador)
+    - routing narrador/combate
     - aplicar updates
+    - si acaba combate: narrador automático
     - guardar estado
-    - devolver texto al frontend
+    - devolver texto
     """
     state = load_state()
 
@@ -120,19 +139,24 @@ def handle_turn(player_input: str) -> dict:
     state.setdefault("logs", {}).setdefault("actions", [])
     state["logs"]["actions"].append(player_input)
 
-    # 2) Routing: si estamos en combate -> agente de combate, si no -> narrador.
-    # MVP: si el usuario indica intención de pelear y no hay combate activo, creamos
-    # un encuentro con 1 bandido para poder probar el sistema.
+    # 2) Routing
     scene = state.get("world", {}).get("current_scene", {}) or {}
     scene_type = scene.get("type", "exploration")
 
     text_low = (player_input or "").lower()
-    # Importante: NO arrancamos combate solo porque el usuario escriba "ataco" o "huir".
-    # Para iniciar combate fuera de un combate activo, exigimos intención explícita (combate/enemigo...).
-    wants_combat = any(k in text_low for k in ["combate", "entro en combate", "enemigo", "bandido", "goblin", "goblins"])
+    wants_combat = any(
+        k in text_low
+        for k in [
+            "combate",
+            "entro en combate",
+            "enemigo",
+            "bandido",
+            "goblin",
+            "goblins",
+        ]
+    )
 
     if scene_type != "combat" and wants_combat:
-        # Spawn de bandido_1 si no existe
         enemies = state.setdefault("world", {}).setdefault("enemies", {})
         if "bandido_1" not in enemies:
             enemies["bandido_1"] = {
@@ -147,31 +171,79 @@ def handle_turn(player_input: str) -> dict:
                 "escaped": False,
             }
 
-        state.setdefault("world", {}).setdefault("current_scene", {}).update({
-            "type": "combat",
-            "location": scene.get("location", state.get("player", {}).get("location", "inicio")),
-            "active_enemy_ids": ["bandido_1"],
-            "active_npc_ids": scene.get("active_npc_ids", []),
-            "combat_status": {
-                "player_skip_next": False,
-                "enemy_skip_next": False,
-                "enemy_disadvantage": False,
+        state.setdefault("world", {}).setdefault("current_scene", {}).update(
+            {
+                "type": "combat",
+                "location": scene.get(
+                    "location", state.get("player", {}).get("location", "inicio")
+                ),
+                "active_enemy_ids": ["bandido_1"],
+                "active_npc_ids": scene.get("active_npc_ids", []),
+                "combat_status": {
+                    "player_skip_next": False,
+                    "enemy_skip_next": False,
+                    "enemy_disadvantage": False,
+                },
             }
-        })
+        )
         scene_type = "combat"
 
+    # 2.5) Ejecutar agente
     if scene_type == "combat":
         result = combat_agent(state, player_input)
     else:
         result = narrador_agent(state, player_input)
-    #print("DEBUG result =", result)
 
     # 3) Aplicar updates y guardar
     state = apply_updates(state, result.get("updates", {}))
     save_state(state)
 
+    # ✅ 3.5) Si el combate terminó, llama al narrador automáticamente
+    # Preferimos el flag combat_end si existe (más fiable)
+    combat_end = result.get("combat_end")
+
+    # Fallback: detectar por cambio de escena (por si todavía no tienes combat_end)
+    was_combat_turn = (scene_type == "combat")
+    now_scene_type = (state.get("world", {}).get("current_scene", {}) or {}).get("type", "exploration")
+    combat_ended_by_scene = was_combat_turn and now_scene_type != "combat"
+
+    if combat_end or combat_ended_by_scene:
+        # Construimos el input para el narrador (string)
+        if combat_end:
+            res = combat_end.get("result", "victory")
+            enemy_ids = combat_end.get("enemy_ids", [])
+            loc = combat_end.get("location", (state.get("player", {}) or {}).get("location", "inicio"))
+
+            post_input = (
+                "POST-COMBATE:\n"
+                f"- Resultado: {res}\n"
+                f"- Enemigos implicados/derrotados: {enemy_ids}\n"
+                f"- Ubicación actual: {loc}\n\n"
+                "Narra brevemente el desenlace y continúa la historia desde la situación actual. "
+                "No repitas las tiradas; céntrate en el resultado, el entorno y las consecuencias. "
+                "Termina con: ¿Qué haces?"
+            )
+        else:
+            post_input = (
+                "POST-COMBATE:\n"
+                "El combate ha terminado. Narra brevemente el desenlace y continúa la historia desde "
+                "la situación actual. No repitas las tiradas; céntrate en el resultado y el entorno. "
+                "Termina con: ¿Qué haces?"
+            )
+
+        narr = narrador_agent(state, post_input)
+
+        # aplicar updates del narrador y guardar
+        state = apply_updates(state, narr.get("updates", {}))
+        save_state(state)
+
+        return {
+            "text": result.get("text", "").rstrip() + "\n\n" + narr.get("text", ""),
+            "image": None
+        }
+
     # 4) Respuesta estándar
     return {
         "text": result.get("text", ""),
-        "image": None  # lo usaremos cuando metas el agente visual
+        "image": None
     }
