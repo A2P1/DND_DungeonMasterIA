@@ -6,30 +6,39 @@ class AgentInput(BaseModel):
     state: Dict[str, Any]
 
 class WorldUpdate(BaseModel):
+    """Campos del mundo que el narrador puede proponer.
+
+    IMPORTANTE: permitimos campos extra para que el prompt pueda evolucionar
+    sin romper el parseo (pydantic extra=allow).
+    """
+
     player_hp: Optional[int] = None
     location: Optional[str] = None
     add_visited_location: Optional[str] = None
 
-    # --- Movimiento 100% IA (mapa + pending) ---
-    # Propuesta de localización nueva (pendiente) para que el jugador la elija.
+    # Movimiento / mapa (opcionales)
     propose_location: Optional[Dict[str, Any]] = None
-
-    # Si el jugador ha elegido entrar a una localización propuesta, limpiamos pendientes.
     clear_pending_locations: Optional[bool] = None
-
-    # Creación de una localización en el mapa (si no existía).
     add_location: Optional[Dict[str, Any]] = None
-
-    # Conexión bidireccional entre dos localizaciones del mapa.
     connect_locations: Optional[List[str]] = None
+
+    class Config:
+        extra = "allow"
 
 class MemoryUpdate(BaseModel):
     append_event: Optional[str] = None
     summary: Optional[str] = None
 
 class SceneUpdate(BaseModel):
-    type: Optional[Literal["exploration", "combat", "dialogue"]] = None
+    type: Optional[Literal["exploration", "combat_pending", "combat", "dialogue"]] = None
     active_enemy_ids: Optional[List[str]] = None
+
+    # Opcionales para que el orquestador pueda spawnear enemigos
+    pending_enemy_type: Optional[str] = None
+    pending_enemy_count: Optional[int] = None
+
+    class Config:
+        extra = "allow"
 
 class AgentOutput(BaseModel):
     text: str

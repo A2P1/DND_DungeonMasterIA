@@ -1,15 +1,15 @@
 {
   "meta": {
     "version": 1,
-    "created_at": "2026-02-05T13:23:59.934659",
-    "turn": 4
+    "created_at": "2026-02-10T11:40:17.810271",
+    "turn": 7
   },
   "player": {
     "id": "player_1",
     "name": "Jugador",
     "class": "Aventurero",
     "level": 1,
-    "hp": 20,
+    "hp": 14,
     "max_hp": 20,
     "ac": 12,
     "dc": 12,
@@ -22,15 +22,17 @@
     },
     "inventory": [],
     "gold": 0,
-    "location": "colina",
+    "location": "bosque",
     "status_effects": []
   },
   "world": {
     "current_scene": {
       "type": "exploration",
-      "location": "colina",
+      "location": "bosque",
       "active_enemy_ids": [],
       "active_npc_ids": [],
+      "pending_enemy_type": "sombra",
+      "pending_enemy_count": 1,
       "combat_status": {
         "player_skip_next": false,
         "enemy_skip_next": false,
@@ -39,7 +41,7 @@
     },
     "visited_locations": [
       "inicio",
-      "colina"
+      "bosque"
     ],
     "pending_locations": [],
     "locations": {
@@ -47,17 +49,14 @@
         "name": "Punto de partida",
         "description": "Un lugar tranquilo donde empieza la aventura.",
         "connected_to": []
-      },
-      "colina": {
-        "name": "Colina brillante",
-        "description": "Una colina que se eleva hacia el cielo, con un destello de luz en su cima que atrae la atención.",
-        "connected_to": [
-          "inicio",
-          "claro"
-        ]
       }
     },
-    "enemies": {},
+    "enemies": {
+      "bandido_1": {
+        "hp": 0,
+        "is_alive": false
+      }
+    },
     "npcs": {},
     "items": {},
     "quests": {
@@ -67,21 +66,23 @@
   },
   "flags": {},
   "narrative_memory": {
-    "summary": "Te adentras más en el bosque y enfrentas a un grupo de goblins.",
+    "summary": "La aventura acaba de comenzar.",
     "last_events": [
-      "Turno 1: jugador -> miro a mi alrededor",
-      "Turno 2: jugador -> sigo el camino principal y llego a un claro con un altar.",
-      "Turno 3: jugador -> me adentro más en el bosque y encuentro un grupo de goblins.",
-      "Derrotaste a los goblins en el bosque y exploraste la colina brillante."
+      "El jugador mira a su alrededor en el Punto de partida, observando el entorno tranquilo y enigmático.",
+      "El jugador decide aventurarse hacia el Sendero del Bosque.",
+      "El jugador derrota al bandido en el bosque y evalúa el entorno tras la batalla."
     ],
     "important_facts": []
   },
   "logs": {
     "actions": [
       "miro a mi alrededor",
-      "Sigo el camino principal",
-      "Me adentro más al bosque",
-      "Entro en combate"
+      "Camino hacia el bosque",
+      "sí",
+      "ataco",
+      "ataco",
+      "ataco",
+      "ataco"
     ]
   }
 }

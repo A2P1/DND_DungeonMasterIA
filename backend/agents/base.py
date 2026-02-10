@@ -44,6 +44,27 @@ class BaseReActAgent(ABC):
         raw = response.content if hasattr(response, "content") else str(response)
         raw = (raw or "").strip()
 
+        # --- Robust JSON cleanup ---
+        # A veces el modelo devuelve el JSON dentro de un bloque ```json ...``` o
+        # añade texto accidental alrededor. Para evitar que el parseo falle y que
+        # el juego imprima el JSON completo, intentamos normalizarlo.
+        if raw.startswith("```"):
+            # remove markdown fences
+            lines = [ln for ln in raw.splitlines()]
+            # drop first fence
+            if lines:
+                lines = lines[1:]
+            # drop last fence
+            if lines and lines[-1].strip().startswith("```"):
+                lines = lines[:-1]
+            raw = "\n".join(lines).strip()
+
+        # Trim anything before first '{' and after last '}'
+        first = raw.find("{")
+        last = raw.rfind("}")
+        if first != -1 and last != -1 and last > first:
+            raw = raw[first : last + 1].strip()
+
         # Intentar parsear JSON -> AgentOutput
         try:
             data = json.loads(raw)
