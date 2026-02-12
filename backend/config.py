@@ -39,4 +39,7 @@ def get_llm(role: str = "narrator"):
         model=model,
         temperature=temperature,
         timeout=30,
+        #response_format = {"type": "json_schema"}
     )
+
+    

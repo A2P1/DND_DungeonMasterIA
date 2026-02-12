@@ -1,15 +1,15 @@
 {
   "meta": {
     "version": 1,
-    "created_at": "2026-02-10T11:40:17.810271",
-    "turn": 7
+    "created_at": "2026-02-12T16:30:26.095733",
+    "turn": 4
   },
   "player": {
     "id": "player_1",
     "name": "Jugador",
     "class": "Aventurero",
     "level": 1,
-    "hp": 14,
+    "hp": 20,
     "max_hp": 20,
     "ac": 12,
     "dc": 12,
@@ -22,26 +22,21 @@
     },
     "inventory": [],
     "gold": 0,
-    "location": "bosque",
+    "location": "arroyo",
     "status_effects": []
   },
   "world": {
     "current_scene": {
-      "type": "exploration",
-      "location": "bosque",
+      "type": "combat_pending",
+      "location": "arroyo",
       "active_enemy_ids": [],
       "active_npc_ids": [],
-      "pending_enemy_type": "sombra",
-      "pending_enemy_count": 1,
-      "combat_status": {
-        "player_skip_next": false,
-        "enemy_skip_next": false,
-        "enemy_disadvantage": false
-      }
+      "pending_enemy_type": "goblin",
+      "pending_enemy_count": 3
     },
     "visited_locations": [
       "inicio",
-      "bosque"
+      "arroyo"
     ],
     "pending_locations": [],
     "locations": {
@@ -51,12 +46,7 @@
         "connected_to": []
       }
     },
-    "enemies": {
-      "bandido_1": {
-        "hp": 0,
-        "is_alive": false
-      }
-    },
+    "enemies": {},
     "npcs": {},
     "items": {},
     "quests": {
@@ -68,21 +58,18 @@
   "narrative_memory": {
     "summary": "La aventura acaba de comenzar.",
     "last_events": [
-      "El jugador mira a su alrededor en el Punto de partida, observando el entorno tranquilo y enigmático.",
-      "El jugador decide aventurarse hacia el Sendero del Bosque.",
-      "El jugador derrota al bandido en el bosque y evalúa el entorno tras la batalla."
+      "El jugador mira a su alrededor en el Punto de partida.",
+      "El jugador se acerca al arroyo y se encuentra con un grupo de goblins.",
+      "El jugador sigue caminando por el arroyo y se encuentra con tres goblins que lo atacan."
     ],
     "important_facts": []
   },
   "logs": {
     "actions": [
       "miro a mi alrededor",
-      "Camino hacia el bosque",
-      "sí",
-      "ataco",
-      "ataco",
-      "ataco",
-      "ataco"
+      "Me acerco al arroyo",
+      "no",
+      "Sigo caminando"
     ]
   }
 }

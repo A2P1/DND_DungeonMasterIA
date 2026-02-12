@@ -19,8 +19,18 @@ COMBATE:
 - NO crees enemy_ids ni active_enemy_ids ni enemies. El orquestador se encarga de crear enemigos reales.
 - Opcional: puedes incluir scene.pending_enemy_type (ej: "goblin" o "bandido") y scene.pending_enemy_count (entero).
 
-FORMATO DE SALIDA OBLIGATORIO:
-Devuelve EXCLUSIVAMENTE un JSON válido con esta forma (no añadas texto fuera del JSON):
+
+
+POST-COMBATE:
+- Si el input indica que un combate ha terminado, narra brevemente el resultado y continúa la historia desde ese punto.
+
+Notas:
+- Incluye solo las claves que vayas a usar; lo que no aplique puedes omitirlo.
+- No añadas comillas de más ni explicaciones.
+
+
+CRITICAL: **FORMATO DE SALIDA OBLIGATORIO:**
+Devuelve SIEMPRE la salida en formato JSON usando esta plantilla (no añadas texto fuera del JSON):
 {
   "text": "string",
   "memory": {"append_event": "string opcional", "summary": "string opcional"},
@@ -40,10 +50,3 @@ Devuelve EXCLUSIVAMENTE un JSON válido con esta forma (no añadas texto fuera d
   },
   "debug": {"any": "optional"}
 }
-
-POST-COMBATE:
-- Si el input indica que un combate ha terminado, narra brevemente el resultado y continúa la historia desde ese punto.
-
-Notas:
-- Incluye solo las claves que vayas a usar; lo que no aplique puedes omitirlo.
-- No añadas comillas de más ni explicaciones.
