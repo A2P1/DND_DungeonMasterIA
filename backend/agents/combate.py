@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from utils.dados import d20, disadvantage
 
 
-# --- Defaults (Hito 1) ---
+# Características por defecto del jugador
 DEFAULT_PLAYER = {
     "hp": 20,
     "ac": 12,
@@ -15,7 +15,7 @@ DEFAULT_PLAYER = {
     "damage_normal": 5,
     "damage_strong": 9,
 }
-
+# Características por defecto de un bandido genérico
 DEFAULT_BANDIT = {
     "name": "Bandido",
     "hp": 12,
@@ -31,14 +31,14 @@ DEFAULT_BANDIT = {
 
 def _get_player(state: Dict[str, Any]) -> Dict[str, Any]:
     p = state.setdefault("player", {})
-    # Fill defaults if missing
+    # Rellenas con valores por defecto si no existen 
     for k, v in DEFAULT_PLAYER.items():
         p.setdefault(k, v)
-    # Keep max_hp coherent
+    # Mantiene un "max_hp" coherente 
     p.setdefault("max_hp", p.get("hp", DEFAULT_PLAYER["hp"]))
     return p
 
-
+# Mantenemos una escena constante, para que cuando cambiemos entre narrador y combate, no se pierda información por el camino
 def _ensure_scene(state: Dict[str, Any]) -> Dict[str, Any]:
     w = state.setdefault("world", {})
     scene = w.setdefault("current_scene", {})
@@ -46,14 +46,14 @@ def _ensure_scene(state: Dict[str, Any]) -> Dict[str, Any]:
     scene.setdefault("location", state.get("player", {}).get("location", "inicio"))
     scene.setdefault("active_enemy_ids", [])
     scene.setdefault("active_npc_ids", [])
-    # Combat status flags
+    # Flags de combate
     status = scene.setdefault("combat_status", {})
     status.setdefault("player_skip_next", False)
     status.setdefault("enemy_skip_next", False)
     status.setdefault("enemy_disadvantage", False)
     return scene
 
-
+#Asegura que el enemigo existe y rellena los valores por defecto
 def _ensure_enemy(state: Dict[str, Any], enemy_id: str) -> Dict[str, Any]:
     enemies = state.setdefault("world", {}).setdefault("enemies", {})
     enemy = enemies.setdefault(enemy_id, {})
@@ -63,7 +63,7 @@ def _ensure_enemy(state: Dict[str, Any], enemy_id: str) -> Dict[str, Any]:
     enemy.setdefault("max_hp", enemy.get("hp", DEFAULT_BANDIT["hp"]))
     return enemy
 
-
+# Generamos a un enemigo activo que esté vivo y no haya escapado y lo devolvemos.
 def _choose_active_enemy(state: Dict[str, Any]) -> Optional[Tuple[str, Dict[str, Any]]]:
     scene = _ensure_scene(state)
     enemies = state.get("world", {}).get("enemies", {}) or {}
@@ -79,13 +79,14 @@ def _parse_player_action(text: str) -> str:
     """Parsea acciones del jugador en combate.
     Devuelve uno de: attack_normal, attack_strong, push, dodge, defend, flee, unknown.
     """
+    # Damos formato al texto que escriba el usuario para procesarlo y facilitar el parseo.
     t = (text or "").lower().strip()
 
-    # huir
+    # Diferentes palabras que puede escribir el usuario para huir.
     if any(k in t for k in ["huir", "huyo", "escapar", "escapo", "correr", "corro"]):
         return "flee"
 
-    # defensa / esquiva / empuje
+    # # Diferentes palabras que puede escribir el usuario para empujar, defenderse o esquivar.
     if "empuj" in t:
         return "push"
     if any(k in t for k in ["esquivo", "esquivar", "esquiva", "dodge"]):
@@ -93,7 +94,7 @@ def _parse_player_action(text: str) -> str:
     if any(k in t for k in ["defiendo", "defender", "defensa", "bloqueo", "paro"]):
         return "defend"
 
-    # ataques
+    # # Diferentes palabras que puede escribir el usuario para atacar y atacar fuerte.
     if "fuerte" in t:
         # si menciona atacar + fuerte, lo tomamos como ataque fuerte
         if any(k in t for k in ["ataco", "atacar", "ataque", "golpeo", "pego", "golpear", "pegar"]):
@@ -107,25 +108,25 @@ def _parse_player_action(text: str) -> str:
     return "unknown"
 
 
-
+# Función para resolver un turno de ataque, aplicando reglas del Dungeons & Dragons como el dado de 20 caras para resolver el conflicto.
 def _attack_roll(attack_bonus: int, target_ac: int, strong: bool = False, with_disadvantage: bool = False) -> Tuple[int, int, bool]:
     base = disadvantage() if with_disadvantage else d20()
     penalty = 0
     if strong:
-        penalty = 2  # más difícil
+        penalty = 2  # Si elige el ataque fuerte, no contamos el bonus de + 2. El bonus en D&D no es bonus de daño, sino un bonus que se añade al valor del dado. Como es un ataque fuerte, es normal que cueste más acertar el golpe
     total = base + attack_bonus - penalty
     hit = total >= target_ac
     return base, total, hit
 
-
+# Turnos del enemigo
 def _bandit_decision(enemy: Dict[str, Any]) -> str:
-    # Huye cuando HP <= 2 (según tu especificación)
+    # Cuando tiene menos 2 puntos de vida, intenta huir
     if int(enemy.get("hp", 0)) <= 2:
         return "shout_flee"
-    # 25% fuerte, 75% normal
+    # El enemigo tiene una probabilidad de 25% de intentar un ataque fuerte, y un 75% de hacer un ataque normal.
     return "attack_strong" if random.random() < 0.25 else "attack_normal"
 
-
+# Cuando termina un combate, comprueba si quedan más enemigos vivos en la escena. Si no quedan, cambia la escena de combate a exploración.
 def _cleanup_scene_after_enemy_list(state: Dict[str, Any]) -> None:
     scene = _ensure_scene(state)
     enemies = state.get("world", {}).get("enemies", {}) or {}
@@ -140,7 +141,7 @@ def _cleanup_scene_after_enemy_list(state: Dict[str, Any]) -> None:
     if not alive_ids and scene.get("type") == "combat":
         scene["type"] = "exploration"
 
-
+# Función principal que define cómo se desarrollan los combates
 def combat_step(state: Dict[str, Any], player_input: str) -> Dict[str, Any]:
     """Resuelve un turno de combate (numérico) y aplica cambios directos al state."""
     player = _get_player(state)
@@ -314,19 +315,19 @@ def combat_step(state: Dict[str, Any], player_input: str) -> Dict[str, Any]:
     }
 
 
-
+# Menú de opciones que aparecen cuando el jugador entra en combate
 def _combat_menu() -> str:
     return "¿Qué decides hacer? (atacar / ataque fuerte / empuje / esquivo / defiendo / huir)"
 
 
 def render_combat_turn(summary: dict) -> str:
-    """Renderiza un turno de combate en formato interactivo (con tiradas y resultados)."""
+    """Renderiza un turno de combate en formato interactivo"""
     enemy_name = summary.get("enemy_name", "Enemigo")
     hp = summary.get("hp_after", {}) or {}
     player_hp = hp.get("player_hp", "?")
     enemy_hp = hp.get("enemy_hp", "?")
 
-    # Si hay error (acción inválida, etc.)
+    # Si hay error 
     if "error" in summary:
         return f"{summary['error']}\nHP -> Tú: {player_hp} | {enemy_name}: {enemy_hp}\n\n{_combat_menu()}"
 
@@ -385,10 +386,10 @@ def render_combat_turn(summary: dict) -> str:
     lines.append(f"HP -> Tú: {player_hp} | {enemy_name}: {enemy_hp}")
 
     if summary.get("enemy_dead"):
-        lines.append(f"✅ Has derrotado a {enemy_name}.")
+        lines.append(f"Has derrotado a {enemy_name}.")
         lines.append("Sales del combate.")
     elif summary.get("player_dead"):
-        lines.append("❌ Has sido derrotado. Fin de la aventura.")
+        lines.append("Has sido derrotado. Fin de la aventura.")
     elif summary.get("combat_ended"):
         lines.append("El combate ha terminado.")
     else:
@@ -397,7 +398,7 @@ def render_combat_turn(summary: dict) -> str:
 
     return "\n".join(lines)
 
-
+# Empaquetamos toda la función para pasársela al orquestador, que se encargará de llamar a esta función cada vez que detecta que el jugador va a iniciar un combate
 def combat_agent(game_state: dict, player_input: str) -> dict:
     """
     Agente de combate interactivo.
