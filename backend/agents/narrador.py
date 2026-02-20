@@ -7,14 +7,14 @@ from agents.base import BaseReActAgent
 from models.agent_io import AgentInput, AgentOutput
 from utils.prompt_loader import load_prompt
 
-
+# Hace un resumen compacto del estado para que el narrador pueda usarlo a modo de información histórica
 def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Compacta el estado real para no mandar un JSON enorme al modelo."""
-    meta = state.get("meta", {})
-    player = state.get("player", {})
-    world = state.get("world", {})
-    mem = state.get("narrative_memory", {})
+    meta = state.get("meta", {}) #Turnos
+    player = state.get("player", {}) #Stats
+    world = state.get("world", {}) #Escena actual
+    mem = state.get("narrative_memory", {}) #Resummen y eventos previos
 
+    #Almacena la información de la escena actual y la ubicación del jugador para que la historia pueda mantener la coherencia
     current_scene = world.get("current_scene", {}) or {}
     locations = world.get("locations", {}) or {}
 
@@ -24,8 +24,9 @@ def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
         or "inicio"
     )
     current_location_info = locations.get(current_location_id, {}) or {}
-
+    # Devolvemos un dict con la info necesaria para que el narrador sepa en qué punto de la historia se encuentra
     return {
+        # Enviamos únicamente la información importante del jugador
         "turn": meta.get("turn", 0),
         "player": {
             "id": player.get("id", "player_1"),
@@ -37,6 +38,7 @@ def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
             "gold": player.get("gold", 0),
             "status_effects": player.get("status_effects", []),
         },
+        # Información del estado del mundo, así como la localización, ambiente, enemigos, etc.
         "world": {
             "current_scene": {
                 "type": current_scene.get("type", "exploration"),
@@ -61,6 +63,7 @@ def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
             "quests_active": (world.get("quests", {}) or {}).get("active", []),
             "quests_completed": (world.get("quests", {}) or {}).get("completed", []),
         },
+        # Po último, un resumen de la memoria narrativa y los últimos eventos detectados
         "memory": {
             "summary": mem.get("summary", ""),
             "last_events": (mem.get("last_events", []) or [])[-5:],
@@ -68,21 +71,24 @@ def _compact_context(state: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-
+# Esta clase hereda de BaseReActAgent
 class NarratorAgent(BaseReActAgent):
     def __init__(self):
         super().__init__(role="narrator")
-
+    # Cargamos el prompt del narrador que es un fichero txt
     def system_prompt(self) -> str:
-        # Sigue en código (si luego quieres pasarlo a .txt, lo cambiamos en 2 líneas)
         return load_prompt("sistema_narrador.txt")
 
+    #Función para el turno del usuario de hablar
     def user_prompt(self, inp: AgentInput) -> str:
         context = _compact_context(inp.state)
 
         return (
+            # Primero, cargamos un resumen de la historia al narrador hasta el momento, para que sepa en qué punto se encuentra
+            # Si no le pasamos un resumen, cada vez que le toque hablar al narrador, contaría una cosa distinta sin sentido alguno
             "ESTADO ACTUAL (resumen):\n"
             f"{json.dumps(context, ensure_ascii=False, indent=2)}\n\n"
+            # Después, el usuario escribe su texto, y le damos una serie de indicaciones para que cuente una historia a partir de lo que ha escrito el usuario, coherente a lo que ha pasado hasta ahora
             "ACCIÓN DEL JUGADOR:\n"
             f"{inp.player_input}\n\n"
             "Instrucciones:\n"
@@ -90,25 +96,24 @@ class NarratorAgent(BaseReActAgent):
             "- Si el jugador se mueve, usa world.location (id del lugar) y world.add_visited_location.\n"
             "- Si introduces un encuentro hostil, usa scene.type='combat_pending' y pregunta (sí/no).\n"
             "- NO inventes active_enemy_ids ni enemies; eso lo hará el orquestador.\n"
-            "- Añade un evento a memory.append_event que resuma el turno.\n"
+            "- Añade un evento a memory.append_event que resuma el turno.\n" 
+            # Volvemos a resumir lo que ha comentado el narrador, para su próxima interacción 
         )
 
 
+# Función que adapta todas las funciones del narrador a un formato que el orquestador actual pueda entender. Esta es la función que el orquestador va a llamar cada vez que quiera dar paso al narrador
 def narrador_agent(game_state: dict, player_input: str) -> dict:
-    """
-    Adaptador para mantener compatibilidad con el orquestador actual:
-    devuelve dict con keys: text, updates
-    devuelve dict con keys: text, updates
-    """
+
+    # Creamos el agente narrador cada vez que se le llama, después se ejecuta
     agent = NarratorAgent()
     out: AgentOutput = agent.invoke(AgentInput(player_input=player_input, state=game_state))
 
+    # Se inicializa la variable de turnos
     turn = game_state.get("meta", {}).get("turn", 0)
     updates: Dict[str, Any] = {}
-    updates: Dict[str, Any] = {}
 
-    # ---- Memoria ----
-    # ---- Memoria ----
+   
+    # Actualizamos la memoria narrativa del agente, para construir una historia coherente.
     if out.memory and out.memory.append_event:
         updates.setdefault("narrative_memory", {})["last_events_append"] = out.memory.append_event
     else:
@@ -117,23 +122,26 @@ def narrador_agent(game_state: dict, player_input: str) -> dict:
     if out.memory and out.memory.summary:
         updates.setdefault("narrative_memory", {})["summary"] = out.memory.summary
 
-    # ---- Movimiento / mundo ----
-    # ---- Movimiento / mundo ----
+   
+    # Si el jugador se mueve, se actualiza el mundo y la localización del jugador.
     if out.world and out.world.location:
-        # location afecta tanto a player.location como a current_scene.location (mantener coherencia)
-        # location afecta tanto a player.location como a current_scene.location (mantener coherencia)
+       # location afecta tanto a player.location como a current_scene.location (mantener coherencia)
         updates.setdefault("player", {})["location"] = out.world.location
         updates.setdefault("world", {}).setdefault("current_scene", {})["location"] = out.world.location
 
-        updates.setdefault("world", {}).setdefault("current_scene", {})["location"] = out.world.location
-
+        
+    # Si el jugador visita una localización ya visitada, esta se añade a visited_locations para que no se "redescubra" la localización (No es mejor comprobar si ya se ha visitado la localización y no hacer nada, en vez de añadir tanto espacio?)
     if out.world and out.world.add_visited_location:
         updates.setdefault("world", {})["visited_locations_append"] = out.world.add_visited_location
 
-    # Propuesta de nueva localización (world.propose_location -> orquestador lo mete en world.pending_locations)
+    # Guardamos en "propose_location" la localización que ha mencionado el narrador. 
+    # A veces pasaba que si el narrador mencionaba un "bosque" y el jugador dice "Entro en el bosque", el narrador lo interpreta como una localización que no estaba ahí.
+    # Por eso, guardamos la localización mencionada, para que el narrador no se vuelva loco
     if out.world and getattr(out.world, "propose_location", None):
         updates.setdefault("world", {})["propose_location"] = out.world.propose_location
 
+    # Cuando el jugador decide si ir a la localización propuesta, se elimina la localización de "propose_location" y se añade a "localización_actual"
+    # Si el jugador decide NO ir a la localización propuesta, no se elimina la localización de "propose_location", en caso de que el jugador quiera volver a ese sitio propuesto más adelante
     if out.world and getattr(out.world, "clear_pending_locations", None):
         if out.world.clear_pending_locations:
             updates.setdefault("world", {})["clear_pending_locations"] = True
